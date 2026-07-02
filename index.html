@@ -568,7 +568,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
           <button class="prop-tab" data-op="" data-type="Departamento">Deptos</button>
           <button class="prop-tab" data-op="" data-type="Terreno">Terrenos</button>
         </div>
-        <a href="https://www.chprop.com.ar" class="view-all">
+        <a href="#" id="ver-todo-link" class="view-all" onclick="showAllProperties(); return false;">
           Ver todas
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
@@ -886,6 +886,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   let drawerPhotos = [];
   let drawerPhotoIdx = 0;
   let currentDrawerProp = null;
+  let showAllMode = false;
 
   const PIN_SVG = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
@@ -1114,7 +1115,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       totalCount = filteredProps.length;
 
       const pageStart = (currentPage - 1) * PAGE_SIZE;
-      const pageItems = filteredProps.slice(pageStart, pageStart + PAGE_SIZE);
+      const pageItems = showAllMode ? filteredProps : filteredProps.slice(pageStart, pageStart + PAGE_SIZE);
 
       if (!pageItems.length) {
         grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem 0;color:var(--gray-600);font-size:0.85rem;">No hay propiedades para este filtro.</div>`;
@@ -1128,9 +1129,12 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       grid.style.display = '';
       loading.style.display = 'none';
 
+      const viewAllLink = document.getElementById('ver-todo-link');
+      if (viewAllLink) viewAllLink.style.display = showAllMode ? 'none' : '';
+
       // Pagination
       const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-      if (totalPages > 1) {
+      if (totalPages > 1 && !showAllMode) {
         pagination.style.display = 'flex';
         document.getElementById('page-info').textContent = `Página ${currentPage} de ${totalPages}`;
         document.getElementById('btn-prev').style.display = currentPage === 1 ? 'none' : '';
@@ -1145,8 +1149,13 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
   function changePage(dir) {
     currentPage += dir;
-
+    loadProperties();
     document.getElementById('propiedades').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function showAllProperties() {
+    showAllMode = true;
+    loadProperties();
   }
 
 
@@ -1174,6 +1183,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     currentOp = op;
     currentType = tipo;
     currentPage = 1;
+    showAllMode = false;
     document.querySelectorAll('.prop-tab').forEach(t => t.classList.remove('active'));
     document.querySelector('.prop-tab').classList.add('active');
     loadProperties();
@@ -1255,6 +1265,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       currentOp = tab.dataset.op || '';
       currentType = tab.dataset.type || '';
       currentPage = 1;
+      showAllMode = false;
       loadProperties();
     });
   });
