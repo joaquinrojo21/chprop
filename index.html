@@ -743,24 +743,26 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
         </a>
       </div>
       <div>
-        <form class="reveal" onsubmit="return false;">
+        <form class="reveal" id="contact-form" name="contacto" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="contacto">
+          <p style="display:none;"><label>No completar: <input name="bot-field"></label></p>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Nombre</label>
-              <input class="form-input" type="text" placeholder="Tu nombre">
+              <input class="form-input" type="text" name="nombre" placeholder="Tu nombre" required>
             </div>
             <div class="form-group">
               <label class="form-label">Teléfono</label>
-              <input class="form-input" type="tel" placeholder="+54 9 351…">
+              <input class="form-input" type="tel" name="telefono" placeholder="+54 9 351…">
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Email</label>
-            <input class="form-input" type="email" placeholder="tu@email.com">
+            <input class="form-input" type="email" name="email" placeholder="tu@email.com" required>
           </div>
           <div class="form-group">
             <label class="form-label">¿Qué buscás?</label>
-            <select class="form-input">
+            <select class="form-input" name="consulta">
               <option value="">Seleccioná una opción</option>
               <option>Comprar una propiedad</option>
               <option>Alquilar una propiedad</option>
@@ -771,10 +773,15 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
           </div>
           <div class="form-group">
             <label class="form-label">Mensaje</label>
-            <textarea class="form-input" rows="4" placeholder="Contanos qué necesitás…" style="resize:vertical;"></textarea>
+            <textarea class="form-input" name="mensaje" rows="4" placeholder="Contanos qué necesitás…" style="resize:vertical;"></textarea>
           </div>
           <button type="submit" class="form-submit">Enviar consulta</button>
+          <p id="contact-form-error" style="display:none;color:var(--red);font-size:0.85rem;margin-top:0.8rem;">Hubo un error al enviar. Probá de nuevo o escribinos por WhatsApp.</p>
         </form>
+        <div id="contact-form-success" class="reveal" style="display:none;text-align:center;padding:3rem 1rem;">
+          <h3 class="section-title" style="font-size:1.6rem;margin-bottom:0.6rem;">¡Gracias<span id="success-name"></span>!</h3>
+          <p class="section-sub" style="margin:0 auto;">Recibimos tu consulta, te vamos a contactar a la brevedad.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1142,6 +1149,35 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     navBurgerEl.classList.remove('open');
     document.body.style.overflow = '';
   }
+
+  // Contact form (Netlify Forms)
+  const contactFormEl = document.getElementById('contact-form');
+  contactFormEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const submitBtn = contactFormEl.querySelector('.form-submit');
+    const errorEl = document.getElementById('contact-form-error');
+    errorEl.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Enviando…';
+    const formData = new FormData(contactFormEl);
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(formData).toString()
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('submit failed');
+        const nombre = formData.get('nombre');
+        document.getElementById('success-name').textContent = nombre ? `, ${nombre}` : '';
+        contactFormEl.style.display = 'none';
+        document.getElementById('contact-form-success').style.display = 'block';
+      })
+      .catch(() => {
+        errorEl.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar consulta';
+      });
+  });
 
   // Reveal on scroll
   const revealObs = new IntersectionObserver((entries) => {
