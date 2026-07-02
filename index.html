@@ -743,9 +743,11 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
         </a>
       </div>
       <div>
-        <form class="reveal" id="contact-form" name="contacto" method="POST" data-netlify="true" netlify-honeypot="bot-field">
-          <input type="hidden" name="form-name" value="contacto">
-          <p style="display:none;"><label>No completar: <input name="bot-field"></label></p>
+        <form class="reveal" id="contact-form" name="contacto" method="POST">
+          <input type="hidden" name="access_key" value="a162d0be-1fe1-4ae3-8811-d285692daff6">
+          <input type="hidden" name="subject" value="Nueva consulta desde chprop.com.ar">
+          <input type="hidden" name="cc" value="rojo.joaquin88@gmail.com">
+          <input type="checkbox" name="botcheck" style="display:none;" tabindex="-1" autocomplete="off">
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Nombre</label>
@@ -1150,7 +1152,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     document.body.style.overflow = '';
   }
 
-  // Contact form (Netlify Forms)
+  // Contact form (Web3Forms — envía por email, gratis, sin backend propio)
   const contactFormEl = document.getElementById('contact-form');
   contactFormEl.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -1160,13 +1162,14 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando…';
     const formData = new FormData(contactFormEl);
-    fetch('/', {
+    fetch('https://api.web3forms.com/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(formData).toString()
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(Object.fromEntries(formData))
     })
-      .then((res) => {
-        if (!res.ok) throw new Error('submit failed');
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.success) throw new Error(data.message || 'submit failed');
         const nombre = formData.get('nombre');
         document.getElementById('success-name').textContent = nombre ? `, ${nombre}` : '';
         contactFormEl.style.display = 'none';
