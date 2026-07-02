@@ -490,9 +490,9 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   </div>
   <div class="hero-search-wrap">
     <div class="search-tabs">
-      <button class="search-tab active" onclick="setTab(this,'')">Comprar</button>
-      <button class="search-tab" onclick="setTab(this,'Venta')">Vender</button>
-      <button class="search-tab" onclick="setTab(this,'Alquiler')">Alquilar</button>
+      <button class="search-tab active" onclick="setTab(this,'',false)">Comprar</button>
+      <button class="search-tab" onclick="setTab(this,'',true)">Vender</button>
+      <button class="search-tab" onclick="setTab(this,'Alquiler',false)">Alquilar</button>
     </div>
     <div class="search-box">
       <div class="search-field">
@@ -522,7 +522,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       </div>
       <button class="search-submit" onclick="doSearch()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        Buscar
+        <span id="search-submit-label">Buscar</span>
       </button>
     </div>
   </div>
@@ -887,6 +887,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   let drawerPhotoIdx = 0;
   let currentDrawerProp = null;
   let showAllMode = false;
+  let currentZona = '';
+  let sellIntent = false;
 
   const PIN_SVG = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
@@ -1111,7 +1113,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       const props = data.objects || [];
-      filteredProps = sortByPriceThreshold(props);
+      const zonaFiltered = currentZona ? props.filter(p => matchesZona(p, currentZona)) : props;
+      filteredProps = sortByPriceThreshold(zonaFiltered);
       totalCount = filteredProps.length;
 
       const pageStart = (currentPage - 1) * PAGE_SIZE;
@@ -1171,17 +1174,43 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   // ── New UI functions ──
   let activeSearchOp = '';
 
-  function setTab(el, op) {
+  function setTab(el, op, isSell) {
     document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
+    sellIntent = !!isSell;
     document.getElementById('search-op').value = op;
+    const label = document.getElementById('search-submit-label');
+    if (label) label.textContent = sellIntent ? 'Continuar' : 'Buscar';
+  }
+
+  // Compara ignorando mayúsculas y acentos (Córdoba === cordoba)
+  function normalizeText(s) {
+    return (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+  }
+
+  function matchesZona(p, zona) {
+    const z = normalizeText(zona);
+    if (!z) return true;
+    const loc = normalizeText(p.location && p.location.name);
+    const full = normalizeText(p.location && p.location.full_location);
+    const addr = normalizeText(p.address);
+    return loc.includes(z) || full.includes(z) || addr.includes(z);
   }
 
   function doSearch() {
+    // "Vender" no es una búsqueda: es un lead, va directo al formulario
+    if (sellIntent) {
+      const consultaSelect = document.querySelector('#contact-form select[name="consulta"]');
+      if (consultaSelect) consultaSelect.value = 'Tasar mi propiedad';
+      document.getElementById('contacto').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     const tipo = document.getElementById('search-tipo')?.value || '';
     const op = document.getElementById('search-op')?.value || '';
+    const zona = document.getElementById('search-zona')?.value || '';
     currentOp = op;
     currentType = tipo;
+    currentZona = zona.trim();
     currentPage = 1;
     showAllMode = false;
     document.querySelectorAll('.prop-tab').forEach(t => t.classList.remove('active'));
