@@ -426,6 +426,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   .drawer-btn-wa:hover { background: #1da851; }
   .drawer-btn-contact { display: flex; align-items: center; justify-content: center; background: var(--black); color: #fff; border: none; cursor: pointer; font-size: 0.78rem; font-weight: 600; padding: 1rem; border-radius: var(--radius-sm); text-decoration: none; transition: background 0.2s; }
   .drawer-btn-contact:hover { background: var(--blue); }
+  .drawer-btn-share { display: flex; align-items: center; justify-content: center; gap: 0.6rem; background: #fff; color: var(--black); border: 1.5px solid var(--gray-200); cursor: pointer; font-size: 0.78rem; font-weight: 600; padding: 1rem; border-radius: var(--radius-sm); transition: all 0.2s; }
+  .drawer-btn-share:hover { border-color: var(--black); }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 900px) {
@@ -832,6 +834,10 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     <a class="drawer-btn-contact" href="#contacto" onclick="closeDrawer()">
       Enviar consulta por formulario
     </a>
+    <button class="drawer-btn-share" id="drawer-share" type="button" onclick="shareCurrentProperty()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7M16 6l-4-4-4 4M12 2v14"/></svg>
+      Copiar link para compartir
+    </button>
   </div>
 </div>
 
@@ -879,6 +885,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   let allProps = [];
   let drawerPhotos = [];
   let drawerPhotoIdx = 0;
+  let currentDrawerProp = null;
 
   const PIN_SVG = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
@@ -942,7 +949,9 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
   const PIN_SVG_SM = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
-  function openDrawer(p) {
+  function openDrawer(p, updateUrl) {
+    if (updateUrl === undefined) updateUrl = true;
+    currentDrawerProp = p;
     drawerPhotos = (p.photos || []).map(ph => ph.image).filter(Boolean);
     drawerPhotoIdx = 0;
 
@@ -1005,13 +1014,63 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     document.getElementById('drawer-overlay').classList.add('open');
     document.getElementById('prop-drawer').classList.add('open');
     document.body.style.overflow = 'hidden';
+
+    if (updateUrl && p.id) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('propiedad', p.id);
+      history.pushState({ propiedad: p.id }, '', url);
+    }
   }
 
-  function closeDrawer() {
+  function closeDrawer(updateUrl) {
+    if (updateUrl === undefined) updateUrl = true;
     document.getElementById('drawer-overlay').classList.remove('open');
     document.getElementById('prop-drawer').classList.remove('open');
     document.body.style.overflow = '';
+    currentDrawerProp = null;
+
+    if (updateUrl && new URL(window.location.href).searchParams.has('propiedad')) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('propiedad');
+      history.pushState({}, '', url);
+    }
   }
+
+  function shareCurrentProperty() {
+    if (!currentDrawerProp || !currentDrawerProp.id) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('propiedad', currentDrawerProp.id);
+    const shareBtn = document.getElementById('drawer-share');
+    const originalHtml = shareBtn.innerHTML;
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      shareBtn.textContent = '¡Link copiado!';
+      setTimeout(() => { shareBtn.innerHTML = originalHtml; }, 2000);
+    }).catch(() => {
+      window.prompt('Copiá el link para compartir:', url.toString());
+    });
+  }
+
+  // Abrir una propiedad directo desde la URL (?propiedad=ID), para compartir por WhatsApp
+  function openPropertyFromUrl() {
+    const id = new URL(window.location.href).searchParams.get('propiedad');
+    if (!id) return;
+    fetch(`${TOKKO_BASE}/property/${id}/?format=json&key=${TOKKO_KEY}&lang=es_ar`)
+      .then(res => { if (!res.ok) throw new Error('not found'); return res.json(); })
+      .then(p => {
+        allProps = [p];
+        openDrawer(p, false);
+      })
+      .catch(() => {});
+  }
+
+  window.addEventListener('popstate', () => {
+    const id = new URL(window.location.href).searchParams.get('propiedad');
+    if (id) {
+      openPropertyFromUrl();
+    } else {
+      closeDrawer(false);
+    }
+  });
 
   function changePhoto(dir) {
     if (!drawerPhotos.length) return;
@@ -1202,6 +1261,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
   // Init
   loadProperties();
+  openPropertyFromUrl();
 
 </script>
 </body>
