@@ -1035,6 +1035,12 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
   const PIN_SVG = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
+  // Tokko a veces devuelve superficie "0.00" como string, que es truthy en JS
+  // y se mostraba como "0.00 m²". Solo mostramos el dato si es un número > 0.
+  function hasArea(v) {
+    return v !== null && v !== undefined && parseFloat(v) > 0;
+  }
+
   function formatPrice(operations) {
     if (!operations || !operations.length) return '';
     const op = operations[0];
@@ -1066,7 +1072,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     const price = formatPrice(p.operations);
     const rooms = p.room_amount ? `${p.room_amount} amb.` : '';
     const suites = p.suite_amount ? `${p.suite_amount} dorm.` : '';
-    const surf = p.total_surface ? `${p.total_surface} m²` : (p.surface ? `${p.surface} m²` : '');
+    const surfVal = hasArea(p.total_surface) ? p.total_surface : (hasArea(p.surface) ? p.surface : null);
+    const surf = surfVal ? `${surfVal} m²` : '';
     const feats = [rooms, suites, surf].filter(Boolean).map(f => `<div class="prop-feat">${f}</div>`).join('');
 
     const imgHeight = 'aspect-ratio:4/3;';
@@ -1138,8 +1145,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       p.room_amount ? { val: p.room_amount, lbl: 'Ambientes' } : null,
       p.suite_amount ? { val: p.suite_amount, lbl: 'Dormitorios' } : null,
       p.bathrooms_amount ? { val: p.bathrooms_amount, lbl: 'Baños' } : null,
-      (p.total_surface || p.surface) ? { val: (p.total_surface || p.surface) + ' m²', lbl: 'Superficie' } : null,
-      p.roofed_surface ? { val: p.roofed_surface + ' m²', lbl: 'Sup. cubierta' } : null,
+      (hasArea(p.total_surface) || hasArea(p.surface)) ? { val: (hasArea(p.total_surface) ? p.total_surface : p.surface) + ' m²', lbl: 'Superficie' } : null,
+      hasArea(p.roofed_surface) ? { val: p.roofed_surface + ' m²', lbl: 'Sup. cubierta' } : null,
       p.parking_lot_amount ? { val: p.parking_lot_amount, lbl: 'Cocheras' } : null,
     ].filter(Boolean);
     document.getElementById('drawer-features').innerHTML = feats.map(f =>
@@ -1463,10 +1470,23 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   });
 
   // Reveal on scroll
+  // rootMargin generoso: si alguien scrollea muy rápido, el elemento entra y sale
+  // del área "observada" antes de que el navegador llegue a chequear la intersección,
+  // y se queda invisible para siempre (opacity:0 de .reveal). Ampliar el margen le da
+  // más recorrido para ser detectado.
   const revealObs = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-  }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+    });
+  }, { threshold: 0, rootMargin: '150px 0px 150px 0px' });
   document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+  // Red de seguridad: si por lo que sea algo se escapó del observer, no se queda invisible
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'));
+    }, 4000);
+  });
 
   // Prop tabs
   document.querySelectorAll('.prop-tab').forEach(tab => {
