@@ -629,7 +629,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       <p style="font-size:0.8rem;letter-spacing:0.1em;">Cargando propiedades…</p>
     </div>
     <div id="props-error" style="display:none;text-align:center;padding:3rem 0;color:var(--gray-400);font-size:0.85rem;">
-      No se pudieron cargar las propiedades. <a href="https://www.chprop.com.ar" style="color:var(--black)">Ver sitio</a>.
+      No pudimos cargar las propiedades. Puede ser tu conexión o que el servicio esté lento.<br>
+      <button onclick="loadProperties()" style="margin-top:1rem;background:var(--black);color:#fff;border:none;padding:0.7rem 1.6rem;border-radius:50px;font-size:0.78rem;font-weight:600;cursor:pointer;">Reintentar</button>
     </div>
     <div class="prop-grid" id="prop-grid"></div>
     <div id="prop-pagination" style="display:none;">
@@ -969,6 +970,13 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   const HIGH_VALUE_USD = 100000;
   const MAX_FETCH = 200;
 
+  // fetch con timeout: si Tokko tarda demasiado, cortamos en vez de dejar la carga colgada
+  function fetchWithTimeout(url, ms) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms || 12000);
+    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
   let filteredProps = [];
 
   function getUsdPrice(p) {
@@ -1170,7 +1178,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   function openPropertyFromUrl() {
     const id = new URL(window.location.href).searchParams.get('propiedad');
     if (!id) return;
-    fetch(`${TOKKO_BASE}/property/${id}/?format=json&key=${TOKKO_KEY}&lang=es_ar`)
+    fetchWithTimeout(`${TOKKO_BASE}/property/${id}/?format=json&key=${TOKKO_KEY}&lang=es_ar`)
       .then(res => { if (!res.ok) throw new Error('not found'); return res.json(); })
       .then(p => {
         allProps = [p];
@@ -1253,8 +1261,15 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     const url = `${TOKKO_BASE}/property/search/?format=json&key=${TOKKO_KEY}&lang=es_ar&limit=${MAX_FETCH}&offset=0&data=${encodeURIComponent(JSON.stringify(searchData))}`;
 
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('API error');
+      let res;
+      try {
+        res = await fetchWithTimeout(url);
+        if (!res.ok) throw new Error('API error');
+      } catch (firstErr) {
+        // Un reintento silencioso antes de mostrar error: suele alcanzar si fue un hipo de red
+        res = await fetchWithTimeout(url);
+        if (!res.ok) throw new Error('API error');
+      }
       const data = await res.json();
       const props = data.objects || [];
       const zonaFiltered = currentZona ? props.filter(p => matchesZona(p, currentZona)) : props;
