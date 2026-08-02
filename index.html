@@ -347,11 +347,18 @@ nav.solid .nav-burger { color: var(--black); }
 .location-rating-stars { color: #f5a623; display: flex; gap: 2px; }
 .location-rating-num { font-family: var(--serif); font-size: 1.3rem; font-weight: 700; color: var(--black); }
 .location-rating-count { font-size: 0.8rem; color: var(--gray-400); }
-.location-reviews { display: flex; flex-direction: column; gap: 1.2rem; margin-bottom: 1.8rem; }
-.location-review { background: var(--gray-50); border-radius: var(--radius-sm); padding: 1.2rem 1.4rem; }
-.location-review-text { font-size: 0.85rem; color: var(--gray-800); line-height: 1.7; font-style: italic; }
-.location-review-author { font-size: 0.75rem; color: var(--gray-400); margin-top: 0.6rem; font-weight: 600; }
 .location-hours { font-size: 0.85rem; color: var(--gray-600); margin-bottom: 1.5rem; }
+.location-reviews-header { text-align: center; margin: 5rem 0 2.5rem; }
+.location-reviews-title { font-family: var(--serif); font-size: clamp(1.6rem, 2.5vw, 2.2rem); font-weight: 700; color: var(--black); margin-top: 0.6rem; }
+.location-reviews-title em { font-style: italic; color: var(--blue); font-weight: 400; }
+.location-reviews-header .section-tag { justify-content: center; }
+.location-reviews { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.2rem; }
+.location-review { background: var(--gray-50); border-radius: var(--radius-sm); padding: 1.4rem 1.5rem; display: flex; flex-direction: column; }
+.location-review-text {
+  font-size: 0.85rem; color: var(--gray-800); line-height: 1.7; font-style: italic;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden;
+}
+.location-review-author { font-size: 0.75rem; color: var(--gray-400); margin-top: 0.8rem; font-weight: 600; }
 
 /* ── CONTACT ── */
 .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; }
@@ -771,19 +778,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </div>
-          <span class="location-rating-num">5.0</span>
-          <span class="location-rating-count">· 2 reseñas en Google</span>
-        </div>
-
-        <div class="location-reviews">
-          <div class="location-review">
-            <div class="location-review-text">"Excelente atención, los chicos te acompañan en todo el proceso."</div>
-            <div class="location-review-author">Nacho Gregoret</div>
-          </div>
-          <div class="location-review">
-            <div class="location-review-text">"Excelente servicio, muy profesionales."</div>
-            <div class="location-review-author">Agostina Maciel</div>
-          </div>
+          <span class="location-rating-num">4.9</span>
+          <span class="location-rating-count">· 15 reseñas en Google</span>
         </div>
 
         <div class="location-hours">
@@ -800,6 +796,33 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
         </div>
+      </div>
+    </div>
+
+    <div class="location-reviews-header reveal">
+      <div class="section-tag">Lo que dicen nuestros clientes</div>
+      <h3 class="location-reviews-title">Historias <em>reales</em>, casas reales</h3>
+    </div>
+    <div class="location-reviews reveal">
+      <div class="location-review">
+        <div class="location-review-text">"Excelente atención; de primera los chicos; de primera."</div>
+        <div class="location-review-author">Ruben Barrientos</div>
+      </div>
+      <div class="location-review">
+        <div class="location-review-text">"Excelentes profesionales. Te olvidás del problema. Solucionan todo desde lo pequeño hasta lo imposible. Gracias chicos!"</div>
+        <div class="location-review-author">Mónica Damiano</div>
+      </div>
+      <div class="location-review">
+        <div class="location-review-text">"Gracias a todo el equipo de CH.PROP, lo súper recomiendo. Excelente la atención y predisposición, el asesoramiento muy bueno y destacable, me acompañaron hasta conseguir mi casa. Estoy súper agradecida!"</div>
+        <div class="location-review-author">Melisa Olmos Haelterman</div>
+      </div>
+      <div class="location-review">
+        <div class="location-review-text">"Súper agradecidos con CH.Prop, nos acompañaron en todo el proceso para llegar a nuestra casa. Excelente predisposición y atención!"</div>
+        <div class="location-review-author">Lorena Petrini</div>
+      </div>
+      <div class="location-review">
+        <div class="location-review-text">"Quiero agradecer a CH.PROP por toda la contención desde el primer momento de empezar a buscar hasta encontrar la casa. Me acompañaron no solo en lo administrativo sino en la logística en todo momento. Lo mejor y sumamente recomendables."</div>
+        <div class="location-review-author">Fernanda Abba</div>
       </div>
     </div>
   </div>
