@@ -983,11 +983,13 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
 <script>
 // ── Tokko Broker API Integration ──
-  const TOKKO_KEY = '1d479ce8129c2ca00bc16585351637d2ba2439fd';
-  const TOKKO_BASE = 'https://www.tokkobroker.com/api/v1';
+  // Las propiedades ahora salen del sistema de gestión propio de CH.Prop, no
+  // de Tokko. La API responde en el mismo formato que Tokko para que el resto
+  // de esta página no tuviera que cambiar.
+  const API_BASE = 'https://ch-prop-app.vercel.app/api/publico';
   const PAGE_SIZE = 6;
 
-  // IDs propios de la cuenta de Tokko de CH.Prop
+  // Los IDs numéricos que usaba Tokko; la API propia los sigue entendiendo
   const OPERATION_TYPE_IDS = { 'Venta': 1, 'Alquiler': 2 };
   const PROPERTY_TYPE_IDS = { 'Terreno': 1, 'Departamento': 2, 'Casa': 3, 'Oficina': 5, 'Local': 7, 'Cochera': 10, 'PH': 13 };
   const HIGH_VALUE_USD = 100000;
@@ -1079,12 +1081,10 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     const imgHeight = 'aspect-ratio:4/3;';
     const nameSize = '';
     const priceSize = '';
-    const url = p.public_url 
-      ? p.public_url 
-      : (p.id ? `https://www.tokkobroker.com/propiedad/${p.id}` : 'https://www.chprop.com.ar');
-
+    // El id ahora es el slug de la propiedad (texto, no número): va entre
+    // comillas o el onclick queda con la sintaxis rota
     return `
-      <div class="prop-card" onclick="openDrawer(allProps.find(x=>x.id===${p.id}))" style="cursor:pointer;">
+      <div class="prop-card" onclick="openDrawer(allProps.find(x=>x.id==='${p.id}'))" style="cursor:pointer;">
         <div class="prop-img" style="${imgHeight}position:relative;overflow:hidden;">
           ${imgHtml}
           ${badge}
@@ -1208,7 +1208,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   function openPropertyFromUrl() {
     const id = new URL(window.location.href).searchParams.get('propiedad');
     if (!id) return;
-    fetchWithTimeout(`${TOKKO_BASE}/property/${id}/?format=json&key=${TOKKO_KEY}&lang=es_ar`)
+    fetchWithTimeout(`${API_BASE}/propiedades/${encodeURIComponent(id)}`)
       .then(res => { if (!res.ok) throw new Error('not found'); return res.json(); })
       .then(p => {
         allProps = [p];
@@ -1288,7 +1288,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     };
     // Trae todas las propiedades del filtro (hasta MAX_FETCH) para poder priorizar
     // las de +USD 100.000 en toda la lista, no solo dentro de cada página.
-    const url = `${TOKKO_BASE}/property/search/?format=json&key=${TOKKO_KEY}&lang=es_ar&limit=${MAX_FETCH}&offset=0&data=${encodeURIComponent(JSON.stringify(searchData))}`;
+    const url = `${API_BASE}/propiedades?data=${encodeURIComponent(JSON.stringify(searchData))}`;
 
     try {
       let res;
