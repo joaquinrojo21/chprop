@@ -439,6 +439,12 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
   .drawer-title { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; color: var(--black); line-height: 1.15; margin-bottom: 0.5rem; }
   .drawer-loc { font-size: 0.78rem; color: var(--gray-400); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1.2rem; }
   .drawer-price { font-size: 2rem; font-weight: 700; color: var(--black); margin-bottom: 1.5rem; padding-bottom: 1.2rem; border-bottom: 1px solid var(--gray-200); }
+  /* El recorrido es vertical: se graba con el celular y sube como Short, así
+     que se le da forma de video vertical centrado en vez de estirarlo. */
+  .drawer-video { margin-bottom: 1.5rem; }
+  .drawer-video-marco { position: relative; width: 100%; max-width: 280px; margin: 0 auto; aspect-ratio: 9 / 16; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
+  .drawer-video-marco iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .drawer-video-titulo { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-400); margin-bottom: 0.7rem; text-align: center; }
   .drawer-features { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem; margin-bottom: 1.5rem; }
   .drawer-feat { background: var(--gray-50); padding: 0.8rem; border-radius: var(--radius-sm); text-align: center; }
   .drawer-feat-val { font-family: var(--serif); font-size: 1.3rem; font-weight: 700; color: var(--black); line-height: 1; }
@@ -950,6 +956,8 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     <div class="drawer-title" id="drawer-title"></div>
     <div class="drawer-loc" id="drawer-loc"></div>
     <div class="drawer-price" id="drawer-price"></div>
+    <!-- El recorrido en video, cuando la propiedad tiene uno cargado -->
+    <div class="drawer-video" id="drawer-video" hidden></div>
     <div class="drawer-features" id="drawer-features"></div>
     <div class="drawer-desc" id="drawer-desc"></div>
     <div class="drawer-actions">
@@ -1137,6 +1145,23 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     const price = formatPrice(p.operations);
     document.getElementById('drawer-price').textContent = price || '';
 
+    // Recorrido en video. Se arma recién al abrir la ficha y se vacía al
+    // cerrarla: si el iframe quedara puesto, el video sigue sonando por
+    // detrás cuando el visitante pasa a otra propiedad.
+    const videoEl = document.getElementById('drawer-video');
+    const video = (p.videos || []).find(v => v && v.player_url);
+    if (video) {
+      videoEl.innerHTML =
+        '<div class="drawer-video-titulo">Recorrido</div>' +
+        '<div class="drawer-video-marco"><iframe src="' + video.player_url +
+        '" title="Recorrido de la propiedad" loading="lazy" allowfullscreen ' +
+        'allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe></div>';
+      videoEl.hidden = false;
+    } else {
+      videoEl.innerHTML = '';
+      videoEl.hidden = true;
+    }
+
     // Features
     const feats = [
       p.room_amount ? { val: p.room_amount, lbl: 'Ambientes' } : null,
@@ -1181,6 +1206,10 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     document.getElementById('prop-drawer').classList.remove('open');
     document.body.style.overflow = '';
     currentDrawerProp = null;
+
+    // Sacar el iframe corta el video: si no, sigue sonando con la ficha cerrada
+    const videoEl = document.getElementById('drawer-video');
+    if (videoEl) { videoEl.innerHTML = ''; videoEl.hidden = true; }
 
     if (updateUrl && new URL(window.location.href).searchParams.has('propiedad')) {
       const url = new URL(window.location.href);
