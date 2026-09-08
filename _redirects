@@ -1,0 +1,3 @@
+# Los enlaces viejos de la epoca de Tokko: /p/7503385-prop
+# Netlify sirve la pagina y el JS resuelve la propiedad por ese numero.
+/p/*  /index.html  200

@@ -990,20 +990,20 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
 
 <script>
-// ── Tokko Broker API Integration ──
-  // Las propiedades ahora salen del sistema de gestión propio de CH.Prop, no
-  // de Tokko. La API responde en el mismo formato que Tokko para que el resto
-  // de esta página no tuviera que cambiar.
+// ── Las propiedades ──
+  // Salen del sistema de gestión propio de CH.Prop. La forma de la respuesta
+  // quedó de cuando la página leía Tokko: se mantuvo tal cual para no tener
+  // que reescribir todo esto el día que Tokko se dio de baja.
   const API_BASE = 'https://ch-prop-app.vercel.app/api/publico';
   const PAGE_SIZE = 6;
 
-  // Los IDs numéricos que usaba Tokko; la API propia los sigue entendiendo
+  // Los IDs numéricos de siempre; la API los sigue entendiendo
   const OPERATION_TYPE_IDS = { 'Venta': 1, 'Alquiler': 2 };
   const PROPERTY_TYPE_IDS = { 'Terreno': 1, 'Departamento': 2, 'Casa': 3, 'Oficina': 5, 'Local': 7, 'Cochera': 10, 'PH': 13 };
   const HIGH_VALUE_USD = 100000;
   const MAX_FETCH = 200;
 
-  // fetch con timeout: si Tokko tarda demasiado, cortamos en vez de dejar la carga colgada
+  // fetch con timeout: si la API tarda demasiado, cortamos en vez de dejar la carga colgada
   function fetchWithTimeout(url, ms) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), ms || 12000);
@@ -1045,7 +1045,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
 
   const PIN_SVG = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2C8.134 2 5 5.134 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.866-3.134-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
 
-  // Tokko a veces devuelve superficie "0.00" como string, que es truthy en JS
+  // La superficie puede venir como "0.00" en texto, que es truthy en JS
   // y se mostraba como "0.00 m²". Solo mostramos el dato si es un número > 0.
   function hasArea(v) {
     return v !== null && v !== undefined && parseFloat(v) > 0;
@@ -1235,22 +1235,49 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     });
   }
 
-  // Abrir una propiedad directo desde la URL (?propiedad=ID), para compartir por WhatsApp
+  // Qué propiedad pide la URL.
+  //
+  // La forma normal es ?propiedad=slug, que es lo que se comparte hoy. La otra
+  // son los enlaces viejos, /p/7503385-prop, que el equipo mandó por WhatsApp
+  // durante meses y quedaron dando "Page not found" cuando cambió la página.
+  // Siguen en las conversaciones de los clientes, así que se siguen
+  // atendiendo: la API encuentra la propiedad por ese número.
+  function idDeLaUrl() {
+    const url = new URL(window.location.href);
+    const delParametro = url.searchParams.get('propiedad');
+    if (delParametro) return delParametro;
+    const viejo = url.pathname.match(/^\/p\/(\d+)-prop\/?$/);
+    return viejo ? viejo[1] : null;
+  }
+
+  // Abrir una propiedad directo desde la URL, para compartir por WhatsApp
   function openPropertyFromUrl() {
-    const id = new URL(window.location.href).searchParams.get('propiedad');
+    const id = idDeLaUrl();
     if (!id) return;
     fetchWithTimeout(`${API_BASE}/propiedades/${encodeURIComponent(id)}`)
       .then(res => { if (!res.ok) throw new Error('not found'); return res.json(); })
       .then(p => {
         allProps = [p];
         openDrawer(p, false);
+        // Si vino por un enlace viejo, dejamos la dirección nueva en la barra:
+        // si el cliente la vuelve a compartir, comparte la buena
+        if (!new URL(window.location.href).searchParams.has('propiedad')) {
+          const url = new URL(window.location.origin + '/');
+          url.searchParams.set('propiedad', p.id);
+          history.replaceState({ propiedad: p.id }, '', url);
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        // La propiedad ya no está publicada: al menos que caiga en el listado
+        // y no en un error
+        if (!new URL(window.location.href).searchParams.has('propiedad')) {
+          history.replaceState({}, '', '/');
+        }
+      });
   }
 
   window.addEventListener('popstate', () => {
-    const id = new URL(window.location.href).searchParams.get('propiedad');
-    if (id) {
+    if (idDeLaUrl()) {
       openPropertyFromUrl();
     } else {
       closeDrawer(false);
