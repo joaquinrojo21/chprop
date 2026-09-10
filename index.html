@@ -424,18 +424,23 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
      casa te gusta es poquísimo. En pantallas anchas se parte en dos: las fotos
      de un lado, los datos del otro. En el celular va una cosa abajo de la
      otra, con la foto ocupando casi la mitad de la altura. */
+  /* Se mantiene la forma original —anclada arriba, derecha y abajo— y solo
+     cambia el ancho. Ponerle inset:0 más width y height sobre-definía la caja
+     y el navegador dejaba de repintar: al scrollear, la página quedaba en
+     blanco. El alto sale de top y bottom, sin unidades de viewport. */
   .drawer {
-    position: fixed; inset: 0; width: 100vw; height: 100dvh;
+    position: fixed; top: 0; right: 0; bottom: 0; width: 100vw;
     background: #fff; z-index: 201; transform: translateX(100%);
     transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
     display: flex; flex-direction: column; overflow: hidden;
   }
   .drawer.open { transform: translateX(0); }
-  .drawer-photos { position: relative; flex-shrink: 0; height: 45dvh; background: var(--gray-100); overflow: hidden; }
+  .drawer-photos { position: relative; flex-shrink: 0; height: 45vh; background: var(--gray-100); overflow: hidden; }
 
+  /* En monitores, las fotos de un lado y los datos del otro */
   @media (min-width: 901px) {
     .drawer { flex-direction: row; }
-    .drawer-photos { height: 100dvh; width: 58%; flex-shrink: 0; }
+    .drawer-photos { height: auto; width: 58%; flex-shrink: 0; }
     .drawer-body { width: 42%; }
   }
   .drawer-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
