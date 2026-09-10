@@ -419,14 +419,25 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
   }
   .drawer-overlay.open { opacity: 1; pointer-events: all; }
+  /* La ficha ocupa la pantalla entera: antes era un panel angosto pegado a la
+     derecha y las fotos entraban en 280 px de alto, que para decidir si una
+     casa te gusta es poquísimo. En pantallas anchas se parte en dos: las fotos
+     de un lado, los datos del otro. En el celular va una cosa abajo de la
+     otra, con la foto ocupando casi la mitad de la altura. */
   .drawer {
-    position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw);
+    position: fixed; inset: 0; width: 100vw; height: 100dvh;
     background: #fff; z-index: 201; transform: translateX(100%);
     transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
     display: flex; flex-direction: column; overflow: hidden;
   }
   .drawer.open { transform: translateX(0); }
-  .drawer-photos { position: relative; flex-shrink: 0; height: 280px; background: var(--gray-100); overflow: hidden; }
+  .drawer-photos { position: relative; flex-shrink: 0; height: 45dvh; background: var(--gray-100); overflow: hidden; }
+
+  @media (min-width: 901px) {
+    .drawer { flex-direction: row; }
+    .drawer-photos { height: 100dvh; width: 58%; flex-shrink: 0; }
+    .drawer-body { width: 42%; }
+  }
   .drawer-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .drawer-photo-nav { position: absolute; bottom: 1rem; right: 1rem; display: flex; gap: 0.4rem; }
   .drawer-photo-btn { background: rgba(255,255,255,0.9); border: none; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--black); border-radius: 50%; transition: background 0.15s; }
@@ -1290,6 +1301,62 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     document.getElementById('drawer-photo').src = drawerPhotos[drawerPhotoIdx];
     document.getElementById('drawer-photo-count').textContent = `${drawerPhotoIdx + 1} / ${drawerPhotos.length}`;
   }
+
+  /**
+   * Pasar las fotos deslizando el dedo.
+   *
+   * Las flechitas siguen estando, pero en el celular nadie las busca: se
+   * desliza. Lo delicado es que la foto también abre el lightbox al tocarla,
+   * así que hay que distinguir un toque de un arrastre. Si el dedo se movió
+   * más de 40 px se toma como deslizar y se cancela el clic; si se movió
+   * menos, es un toque y abre la foto grande.
+   *
+   * Solo cuenta el movimiento horizontal: si el dedo baja más de lo que
+   * cruza, la persona está scrolleando la ficha y no hay que robarle el gesto.
+   */
+  function deslizarParaPasarFotos(elemento) {
+    if (!elemento) return;
+    let x0 = null, y0 = null, arrastro = false;
+
+    elemento.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      x0 = e.touches[0].clientX;
+      y0 = e.touches[0].clientY;
+      arrastro = false;
+    }, { passive: true });
+
+    elemento.addEventListener('touchmove', e => {
+      if (x0 === null || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - x0;
+      const dy = e.touches[0].clientY - y0;
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) arrastro = true;
+    }, { passive: true });
+
+    elemento.addEventListener('touchend', e => {
+      if (x0 === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0;
+      const dy = t.clientY - y0;
+      x0 = null; y0 = null;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        // Deslizar hacia la izquierda muestra la siguiente, como en cualquier galería
+        changePhoto(dx < 0 ? 1 : -1);
+      }
+    }, { passive: true });
+
+    // El clic viaja después del touchend: si hubo arrastre, se corta acá para
+    // que deslizar no abra el lightbox
+    elemento.addEventListener('click', e => {
+      if (arrastro) {
+        e.stopPropagation();
+        e.preventDefault();
+        arrastro = false;
+      }
+    }, true);
+  }
+
+  deslizarParaPasarFotos(document.getElementById('drawer-photos'));
+  deslizarParaPasarFotos(document.getElementById('lightbox'));
 
   // ── Lightbox ──
   function openLightbox(idx) {
