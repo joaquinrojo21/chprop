@@ -1433,7 +1433,11 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
       const data = await res.json();
       const props = data.objects || [];
       const zonaFiltered = currentZona ? props.filter(p => matchesZona(p, currentZona)) : props;
-      filteredProps = sortByPriceThreshold(zonaFiltered);
+      // El orden lo decide el sistema, no esta página. Antes se reordenaba por
+      // precio —las de más de USD 100.000 primero, de mayor a menor— y el
+      // terreno de 750.000 quedaba siempre adelante aunque en el sistema se
+      // pusiera otra cosa primera.
+      filteredProps = zonaFiltered;
       totalCount = filteredProps.length;
 
       const pageStart = (currentPage - 1) * PAGE_SIZE;
