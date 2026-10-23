@@ -1083,6 +1083,30 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     return operations[0].operation_type || '';
   }
 
+  /**
+   * La línea de ubicación: calle y altura primero, barrio después.
+   *
+   * Hasta ahora la dirección solo se usaba como reemplazo del título cuando
+   * faltaba, así que nunca se veía. El equipo pidió mostrarla.
+   *
+   * Se omite cuando no dice nada ("sin número", un guión) y cuando repite lo
+   * que ya dice el barrio: varias fichas tienen cargado el nombre del barrio
+   * en el campo de la calle, y quedaba "Tejas Tres · Tejas Tres".
+   */
+  function textoUbicacion(p) {
+    const barrio = p.location && p.location.name ? String(p.location.name).trim() : '';
+    let calle = (p.address || '').replace(/\s+/g, ' ').trim();
+
+    if (/^(s\/?n\.?|sin\s*n(u|ú)mero|sin\s*datos?|-+|\.*)$/i.test(calle)) calle = '';
+
+    if (calle && barrio) {
+      const pelar = (t) => normalizeText(t).replace(/[^a-z0-9]+/g, ' ').trim();
+      const c = pelar(calle), b = pelar(barrio);
+      if (b && (c.indexOf(b) !== -1 || b.indexOf(c) !== -1)) return calle;
+    }
+    return [calle, barrio].filter(Boolean).join(' · ');
+  }
+
   function buildCard(p, featured) {
     const photo = p.photos && p.photos.length ? p.photos[0].image : null;
     const imgHtml = photo
@@ -1094,7 +1118,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     const badge = opLabel ? `<div style="position:absolute;top:1rem;left:1rem;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;background:${badgeColor};color:#fff;padding:0.3rem 0.8rem;font-weight:500;">${opLabel}</div>` : '';
 
     const tipo = p.type ? p.type.name : '';
-    const loc = p.location ? p.location.name : '';
+    const loc = textoUbicacion(p);
     const price = formatPrice(p.operations);
     const rooms = p.room_amount ? `${p.room_amount} amb.` : '';
     const suites = p.suite_amount ? `${p.suite_amount} dorm.` : '';
@@ -1157,7 +1181,7 @@ footer { background: var(--near-black); padding: 2.5rem 3rem; }
     document.getElementById('drawer-title').textContent = p.title || p.address || 'Propiedad';
 
     // Location
-    const loc = p.location ? p.location.name : '';
+    const loc = textoUbicacion(p);
     document.getElementById('drawer-loc').innerHTML = loc ? PIN_SVG_SM + ' ' + loc : '';
 
     // Price
