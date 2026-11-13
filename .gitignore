@@ -1,3 +1,12 @@
 .claude/
 serve.ps1
 index_9.html
+
+# Documentos de clientes y material interno. Esta carpeta se publica sola en
+# chprop.com.ar, asi que lo que no esta ignorado termina online: las ofertas,
+# minutas y tasaciones llevan nombres y direcciones de gente real.
+*.pdf
+*.docx
+*.xlsx
+Placas CH.Prop/
+placa-*.png
