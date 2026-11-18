@@ -20,6 +20,7 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const arrow = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
   const check = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D5121B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+  const pin = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D5121B" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   let ALL = [];
@@ -83,6 +84,33 @@
     const norm = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
     if (c && b && (norm(c).includes(norm(b)) || norm(b).includes(norm(c)))) return c.length >= b.length ? c : b;
     return [c, b].filter(Boolean).join(' · ');
+  }
+
+  // Ubicación para el mapa. Si el sistema algún día manda coordenadas
+  // (geo_lat / geo_long, como Tokko), el pin va exacto; si no, se busca
+  // por dirección + barrio + Córdoba.
+  function mapQuery(p) {
+    const lat = parseFloat(p.geo_lat), lng = parseFloat(p.geo_long);
+    if (lat && lng) return lat + ',' + lng;
+    const b = barrioOf(p);
+    let c = locLine(p);
+    if (b && c.endsWith(' · ' + b)) c = c.slice(0, -(b.length + 3));
+    if (c === b) c = '';
+    // "Raul Rina al 8500" → "Raul Rina 8500". Calle y barrio juntos con
+    // coma Google los toma como dos puntos y dibuja un recorrido.
+    c = c.replace(/\s+al\s+(\d)/i, ' $1');
+    const q = c || b;
+    if (!q) return '';
+    return q + (/c[oó]rdoba/i.test(q) ? '' : ', Córdoba') + ', Argentina';
+  }
+  function mapHtml(p) {
+    const q = mapQuery(p);
+    if (!q) return '';
+    const e = encodeURIComponent(q);
+    return '<div class="f-sec" id="f-map"><h2 class="disp">Ubicación</h2>' +
+      (locLine(p) ? '<span class="f-loc">' + pin + esc(locLine(p)) + '</span>' : '') +
+      '<div class="map"><iframe src="https://maps.google.com/maps?q=' + e + '&z=15&hl=es&output=embed" title="Mapa de la ubicación" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>' +
+      '<a class="btn line map-go" href="https://www.google.com/maps/search/?api=1&query=' + e + '" target="_blank" rel="noopener">Abrir en Google Maps' + arrow + '</a></div>';
   }
 
   function factsHtml(p) {
@@ -324,7 +352,7 @@
   }
 
   function waLink(p, kind) {
-    const t = sentence(p.title || 'la propiedad');
+    const t = sentence(p.title || 'la propiedad') + (locLine(p) ? ' (' + locLine(p) + ')' : '');
     const msg = kind === 'visita'
       ? 'Hola, quiero coordinar una visita a: ' + t + ' — ' + location.origin + '/?propiedad=' + p.id
       : 'Hola, me interesa: ' + t + ' (' + price(p) + ') — ' + location.origin + '/?propiedad=' + p.id;
@@ -354,7 +382,7 @@
         '<div style="display:flex;flex-direction:column;gap:16px;min-width:0">' +
           '<div class="pills"><span>' + esc(opL || 'Propiedad') + '</span><span>' + esc(t) + '</span></div>' +
           '<h1 class="disp">' + esc(title) + '</h1>' +
-          (locLine(p) ? '<span class="f-loc"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D5121B" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>' + esc(locLine(p)) + '</span>' : '') +
+          (locLine(p) ? '<a class="f-loc" href="#f-map" id="f-loc">' + pin + esc(locLine(p)) + '</a>' : '') +
         '</div>' +
         '<div class="f-price"><small>Precio</small><b class="disp">' + esc(price(p)) + '</b></div>' +
       '</section>' +
@@ -367,6 +395,7 @@
           (d.paras.length ? '<div class="f-sec"><h2 class="disp">Sobre la propiedad</h2><div class="desc" id="desc">' + d.paras.map((x) => '<p>' + esc(x) + '</p>').join('') + '</div><button type="button" class="more" id="desc-more" hidden>Leer más</button></div>' : '') +
           (d.bullets.length >= 2 ? '<div class="f-sec"><h2 class="disp">Lo que tiene</h2><div class="feats">' + d.bullets.map((b) => '<div class="feat">' + check + esc(b) + '</div>').join('') + '</div></div>' : '') +
           (vid ? '<div class="f-sec"><h2 class="disp">Recorrido en video</h2><div class="video"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(vid) + '" title="Recorrido en video" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div></div>' : '') +
+          mapHtml(p) +
         '</div>' +
         '<aside class="side">' +
           '<div class="box"><b class="disp">' + esc(price(p)) + '</b><span style="color:var(--muted);font-size:15px">' + esc([t, area(p) ? area(p) + ' m²' : '', barrioOf(p)].filter(Boolean).join(' · ')) + '</span>' +
@@ -388,6 +417,8 @@
       more.addEventListener('click', () => { const c = desc.classList.toggle('clip'); more.textContent = c ? 'Leer más' : 'Leer menos'; });
     }
     $('#f-copy').addEventListener('click', share);
+    const fl = $('#f-loc'), fm = $('#f-map');
+    if (fl) fl.addEventListener('click', (e) => { e.preventDefault(); if (fm) fm.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); });
     bindCards($('#sim'));
     reveal($('#f-content'));
     $$('#f-content .rv').forEach((el) => el.classList.add('in'));
@@ -425,7 +456,8 @@
     if (!fp) return;
     const url = location.origin + '/?propiedad=' + encodeURIComponent(fp.id);
     const title = sentence(fp.title || 'Propiedad');
-    if (navigator.share) { navigator.share({ title: title, text: title + ' — CH.Prop', url: url }).catch(() => {}); return; }
+    const where = locLine(fp);
+    if (navigator.share) { navigator.share({ title: title, text: [title, where, price(fp)].filter(Boolean).join(' — ') + ' — CH.Prop', url: url }).catch(() => {}); return; }
     const done = () => { const b = $('#f-copy'); if (b) b.textContent = 'Enlace copiado'; };
     if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, done); else done();
   }
