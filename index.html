@@ -453,6 +453,23 @@ a.f-loc{text-decoration:none;cursor:pointer}a.f-loc:hover{color:var(--ink)}
       <div class="nstat"><b class="disp">0</b><span>revalúo de inmuebles urbanos previsto para 2027</span></div>
     </div>
   </a>
+  <div class="subs rv" id="suscribirse">
+    <div class="subs-t">
+      <span class="kicker">Gratis · un mensaje por semana</span>
+      <b class="disp">Recibí Novedades todos los lunes por WhatsApp</b>
+      <p>El dato del mercado de la semana y qué significa si tenés una propiedad en Córdoba. Sin cadenas ni publicidad: te das de baja cuando quieras.</p>
+    </div>
+    <form data-subs novalidate>
+      <div class="row">
+        <label>Tu nombre<input name="nombre" autocomplete="given-name" placeholder="Nombre" required></label>
+        <label>¿Tenés una propiedad?<select name="propiedad" required><option value="">Elegí una opción</option><option value="no">No, solo quiero el informe</option><option value="vender">Sí, la quiero vender</option><option value="alquilar">Sí, la quiero alquilar</option><option value="alquilada">Sí, ya está alquilada</option></select></label>
+      </div>
+      <label class="subs-barrio" hidden>¿En qué barrio?<input name="barrio" placeholder="Ej.: Cerro de las Rosas"></label>
+      <button class="btn red" type="submit">Suscribirme por WhatsApp</button>
+      <p class="subs-ok" hidden>¡Listo! Mandá el mensaje que se abrió en WhatsApp y te sumamos a la lista.</p>
+      <small>Se abre WhatsApp con el mensaje escrito. Para recibir los informes, agendá el 351 663-0472.</small>
+    </form>
+  </div>
 </section>
 
 <!-- NOSOTROS -->
@@ -582,5 +599,6 @@ a.f-loc{text-decoration:none;cursor:pointer}a.f-loc:hover{color:var(--ink)}
 </div>
 
 <script src="/app.js"></script>
+<script src="/suscribir.js" defer></script>
 </body>
 </html>
